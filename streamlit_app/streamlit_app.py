@@ -7,7 +7,11 @@ import pandas as pd
 import streamlit as st
 
 BASE_DIR = Path(__file__).resolve().parent
-MODELS_DIR = BASE_DIR / "models"
+
+MODEL_LOCATIONS = [
+    BASE_DIR / "models",
+    BASE_DIR
+]
 
 MODEL_FILES = {
     "Random Forest": "random_forest_model.joblib",
@@ -23,12 +27,14 @@ st.set_page_config(page_title="AI Tweet Detection", layout="wide")
 
 @st.cache_resource(show_spinner="Loading model...")
 def load_model(name):
-    """One model per call, not both. Loading the forest costs ~150ms and there's
-    no reason to pay it for a session that only ever touches logistic regression."""
-    path = MODELS_DIR / MODEL_FILES[name]
-    if not path.exists():
-        return None
-    return joblib.load(path)
+    filename = MODEL_FILES[name]
+
+    for folder in MODEL_LOCATIONS:
+        path = folder / filename
+        if path.exists():
+            return joblib.load(path)
+
+    return None
 
 
 @st.cache_data
