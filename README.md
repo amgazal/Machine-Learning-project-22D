@@ -65,11 +65,15 @@ The model's top predictive feature was the literal string `https`, followed by e
 
 **Model comparison** — Accuracy, Precision, Recall, and F1 across all three models, side by side.
 
-![Model comparison chart](images/model_comparison_chart.png)
+<p align="center">
+  <img src="images/model_comparison_chart.png" width="600" alt="Model comparison chart">
+</p>
 
 **Try it yourself** — an interactive [Streamlit app]([streamlit_app](https://machine-learning-project-22d-atu8bhkcttbebpd44xntd2.streamlit.app/)) lets you paste a tweet, pick a model, and get a live prediction with confidence score, or run batch predictions on a CSV.
 
-![Streamlit app](images/streamlit.png)
+<p align="center">
+  <img src="images/streamlit.png" width="600" alt="Model comparison chart">
+</p>
 
 ---
 
