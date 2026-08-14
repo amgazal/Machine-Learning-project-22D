@@ -4,7 +4,7 @@ Carine, Gazal, Nero, Samanvitha, Alayna
 
 *Can we classify between human vs. AI-generated tweets?*
 
-[View the code](#project-pipeline) · [Try the app][streamlit_app](https://machine-learning-project-22d-atu8bhkcttbebpd44xntd2.streamlit.app/)
+[View the code](#project-pipeline) · [Try the app](https://machine-learning-project-22d-atu8bhkcttbebpd44xntd2.streamlit.app/){:target="_blank" rel="noopener"}
 
 ---
 
