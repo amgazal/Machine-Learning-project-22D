@@ -59,7 +59,9 @@ The model's top predictive feature was the literal string `https`, followed by e
 
 **Class balance by source dataset** — TweepFake is nearly 50/50 human vs. AI; ElectAI is heavily AI-skewed (2,866 human vs. 7,024 AI), which is the root cause of the topic-leakage finding above.
 
-![Label Distribution by Source Dataset](images/distribution.png)
+<p align="center">
+  <img src="images/distribution.png" width="600" alt="Model comparison chart">
+</p>
 
 **Model comparison** — Accuracy, Precision, Recall, and F1 across all three models, side by side.
 
