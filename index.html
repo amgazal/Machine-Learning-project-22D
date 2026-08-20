@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tweet or Threat? — AI Tweet Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0B0F1A;
+    --surface: #131929;
+    --border: #1E2D45;
+    --accent: #00D4FF;
+    --accent2: #7B61FF;
+    --warn: #FF6B6B;
+    --text: #E8EDF5;
+    --muted: #8B9AB0;
+    --green: #00E5A0;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(11,15,26,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5rem 2rem 4rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hero-tag::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+  }
+
+  .accent-text { color: var(--accent); }
+  .accent2-text { color: var(--accent2); }
+
+  .hero-desc {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 600px;
+    margin-bottom: 2.5rem;
+    font-weight: 300;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 0.3rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .btn-primary:hover {
+    background: #33DDFF;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  p {
+    color: var(--muted);
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+
+  /* ── PROBLEM ── */
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  .problem-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: border-color 0.2s;
+  }
+
+  .problem-card:hover { border-color: var(--accent2); }
+
+  .problem-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .problem-card h3 { color: var(--text); font-size: 1rem; }
+  .problem-card p { font-size: 0.9rem; margin: 0; }
+
+  /* ── JOURNEY ── */
+  .journey-list {
+    list-style: none;
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .journey-item {
+    display: flex;
+    gap: 1.5rem;
+    padding-bottom: 2rem;
+    position: relative;
+  }
+
+  .journey-item::before {
+    content: '';
+    position: absolute;
+    left: 0.65rem;
+    top: 2rem;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .journey-item:last-child::before { display: none; }
+
+  .journey-dot {
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+  }
+
+  .journey-dot.active { border-color: var(--accent); background: rgba(0,212,255,0.1); }
+  .journey-dot.warn { border-color: var(--warn); background: rgba(255,107,107,0.1); }
+  .journey-dot.success { border-color: var(--green); background: rgba(0,229,160,0.1); }
+
+  .journey-content h3 { font-size: 1rem; color: var(--text); }
+  .journey-content p { font-size: 0.9rem; margin: 0.25rem 0 0; }
+
+  /* ── DATA ── */
+  .data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 600px) { .data-grid { grid-template-columns: 1fr; } }
+
+  .data-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+
+  .data-card .badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent2);
+    background: rgba(123,97,255,0.12);
+    border: 1px solid rgba(123,97,255,0.25);
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    display: inline-block;
+    margin-bottom: 0.75rem;
+  }
+
+  .data-card h3 { font-size: 1rem; color: var(--text); margin-bottom: 0.5rem; }
+
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+
+  .data-row:last-child { border: none; }
+  .data-row span:first-child { color: var(--muted); }
+  .data-row span:last-child { color: var(--text); font-family: var(--mono); font-size: 0.8rem; }
+
+  /* ── MODELS ── */
+  .models-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  .model-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1.5rem;
+    align-items: start;
+    transition: border-color 0.2s;
+  }
+
+  .model-card:hover { border-color: var(--accent); }
+  .model-card.best { border-color: var(--green); }
+
+  .model-num {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding-top: 0.2rem;
+  }
+
+  .model-name { font-size: 1.05rem; font-weight: 600; color: var(--text); margin-bottom: 0.4rem; }
+  .model-type {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent2);
+    margin-bottom: 0.6rem;
+  }
+
+  .model-card p { font-size: 0.88rem; margin: 0; }
+
+  .model-accuracy {
+    text-align: right;
+  }
+
+  .accuracy-num {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .model-card.best .accuracy-num { color: var(--green); }
+  .accuracy-label { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+
+  .best-badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--green);
+    background: rgba(0,229,160,0.1);
+    border: 1px solid rgba(0,229,160,0.25);
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    display: inline-block;
+    margin-top: 0.4rem;
+  }
+
+  @media (max-width: 600px) {
+    .model-card { grid-template-columns: auto 1fr; }
+    .model-accuracy { grid-column: 2; }
+  }
+
+  /* ── RESULTS TABLE ── */
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+    font-size: 0.9rem;
+  }
+
+  .results-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .results-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+
+  .results-table tr:last-child td { border: none; }
+  .results-table tbody tr:hover { background: var(--surface); }
+  .results-table .best-row td { color: var(--green); }
+  .results-table .model-col { color: var(--text); font-family: var(--sans); font-weight: 500; }
+
+  /* ── IMPACT ── */
+  .impact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 600px) { .impact-grid { grid-template-columns: 1fr; } }
+
+  .impact-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+
+  .impact-card.positive { border-top: 3px solid var(--green); }
+  .impact-card.negative { border-top: 3px solid var(--warn); }
+
+  .impact-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+
+  .impact-card.positive .impact-title { color: var(--green); }
+  .impact-card.negative .impact-title { color: var(--warn); }
+
+  .impact-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .impact-list li {
+    font-size: 0.88rem;
+    color: var(--muted);
+    padding-left: 1rem;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .impact-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--border);
+    font-size: 0.8rem;
+  }
+
+  /* ── TEAM ── */
+  .team-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .team-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.88rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* ── CITATIONS ── */
+  .citations-list {
+    list-style: none;
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .citations-list li {
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding-left: 1.5rem;
+    position: relative;
+    line-height: 1.6;
+  }
+
+  .citations-list li::before {
+    content: counter(item);
+    counter-increment: item;
+    position: absolute;
+    left: 0;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+
+  .citations-list { counter-reset: item; }
+
+  .citations-list a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .citations-list a:hover { text-decoration: underline; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* ── BIAS BOX ── */
+  .bias-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent2);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .bias-box h3 { color: var(--accent2); margin-bottom: 0.75rem; font-size: 0.95rem; }
+  .bias-box p { font-size: 0.9rem; margin: 0; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+  .col-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .col-card h4 { font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.75rem; }
+
+  .col-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .col-card ul li {
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding-left: 1rem;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .col-card ul li::before { content: '•'; position: absolute; left: 0; color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-logo">22D / AI Tweet Detection</span>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#data">Data</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#impact">Impact</a></li>
+    <li><a href="https://github.com/wagueacarinetech-hue/Machine-Learning-project-22D" target="_blank">GitHub ↗</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">AI4ALL Portfolio Project · Team 22D</div>
+  <h1>Tweet or <span class="accent-text">Threat?</span><br>Detecting <span class="accent2-text">AI-Generated</span><br>Content on Social Media</h1>
+  <p class="hero-desc">A machine learning system that classifies whether a tweet was written by a human or generated by AI — helping researchers, analysts and election monitors filter inauthentic content at scale.</p>
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-num">92%</span>
+      <span class="stat-label">BERT Accuracy</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">35K</span>
+      <span class="stat-label">Tweets Trained On</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">3</span>
+      <span class="stat-label">Models Compared</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">+10%</span>
+      <span class="stat-label">BERT vs Baseline</span>
+    </div>
+  </div>
+  <div class="hero-actions">
+    <a href="https://github.com/wagueacarinetech-hue/Machine-Learning-project-22D" class="btn btn-primary" target="_blank">View on GitHub ↗</a>
+    <a href="#results" class="btn btn-secondary">See Results</a>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="section-label">The Problem</div>
+  <h2>Bots are everywhere.<br>Telling them apart is hard.</h2>
+  <p>An estimated 10–20% of Twitter/X accounts are automated bots, spiking to 43% during the 2020 US election. These bots spread misinformation, distort public opinion research, and influence financial markets — yet no major platform has integrated reliable AI text detection.</p>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="problem-icon">🗳️</div>
+      <h3>Election Integrity</h3>
+      <p>15% of pro-Trump and 7% of pro-Biden posts during the 2020 election were driven by coordinated bot accounts.</p>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">🦠</div>
+      <h3>Public Health</h3>
+      <p>During COVID-19, bots flooded Twitter with anti-vaccine conspiracies linked to real-world vaccine hesitancy.</p>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">📉</div>
+      <h3>Financial Markets</h3>
+      <p>AI-generated fake content has been shown to cause instantaneous stock market losses of hundreds of billions of dollars.</p>
+    </div>
+    <div class="problem-card">
+      <div class="problem-icon">🔬</div>
+      <h3>Research Integrity</h3>
+      <p>Researchers studying public opinion on Twitter cannot trust their findings if a significant portion of data was bot-generated.</p>
+    </div>
+  </div>
+</section>
+
+<!-- JOURNEY -->
+<section id="journey">
+  <div class="section-label">Project Evolution</div>
+  <h2>How we got here.</h2>
+  <ul class="journey-list">
+    <li class="journey-item">
+      <div class="journey-dot active"></div>
+      <div class="journey-content">
+        <h3>Started with Disaster Tweet Classification</h3>
+        <p>Built a model to filter relevant tweets during natural disasters using 165,000+ labeled tweets from Kaggle and Zenodo.</p>
+      </div>
+    </li>
+    <li class="journey-item">
+      <div class="journey-dot warn"></div>
+      <div class="journey-content">
+        <h3>Identified critical gaps</h3>
+        <p>The dataset did not clearly prove the problem existed in practice. No direct evidence that emergency responders were actually overwhelmed by tweet volume. Unclear target audience and no realistic deployment path.</p>
+      </div>
+    </li>
+    <li class="journey-item">
+      <div class="journey-dot warn"></div>
+      <div class="journey-content">
+        <h3>Explored alternatives</h3>
+        <p>Investigated source credibility detection, Ushahidi crisis classification and fake review detection before finding the right direction.</p>
+      </div>
+    </li>
+    <li class="journey-item">
+      <div class="journey-dot success"></div>
+      <div class="journey-content">
+        <h3>Pivoted to AI Tweet Detection</h3>
+        <p>Settled on detecting AI-generated tweets — a well-documented problem with clear use cases for researchers, election monitors and journalists. Built and compared three models with BERT achieving 92% accuracy.</p>
+      </div>
+    </li>
+  </ul>
+</section>
+
+<!-- DATA -->
+<section id="data">
+  <div class="section-label">Datasets</div>
+  <h2>Two sources. One combined dataset.</h2>
+  <p>We merged two publicly available labeled datasets covering a range of AI generation methods — from older approaches like GPT-2 and LSTM to newer models like Falcon, Llama and Mistral.</p>
+  <div class="data-grid">
+    <div class="data-card">
+      <span class="badge">Dataset 01</span>
+      <h3>TweepFake</h3>
+      <div class="data-row"><span>Source</span><span>PLOS ONE (2021)</span></div>
+      <div class="data-row"><span>Size</span><span>25,572 tweets</span></div>
+      <div class="data-row"><span>Focus</span><span>General bot activity</span></div>
+      <div class="data-row"><span>AI Methods</span><span>GPT-2, RNN, LSTM</span></div>
+      <div class="data-row"><span>Balance</span><span>50 / 50</span></div>
+    </div>
+    <div class="data-card">
+      <span class="badge">Dataset 02</span>
+      <h3>ElectAI</h3>
+      <div class="data-row"><span>Source</span><span>arXiv (2024)</span></div>
+      <div class="data-row"><span>Size</span><span>9,900 tweets</span></div>
+      <div class="data-row"><span>Focus</span><span>Election claims</span></div>
+      <div class="data-row"><span>AI Methods</span><span>Falcon, Llama, Mistral</span></div>
+      <div class="data-row"><span>Balance</span><span>50 / 50</span></div>
+    </div>
+  </div>
+  <div class="data-card" style="margin-top:1.25rem;">
+    <span class="badge" style="color:var(--green);background:rgba(0,229,160,0.1);border-color:rgba(0,229,160,0.25);">Combined</span>
+    <div style="display:flex;gap:3rem;flex-wrap:wrap;margin-top:0.5rem;">
+      <div class="data-row" style="flex:1;min-width:180px;"><span>Total tweets</span><span>35,443</span></div>
+      <div class="data-row" style="flex:1;min-width:180px;"><span>Human (0)</span><span>15,647 (44.1%)</span></div>
+      <div class="data-row" style="flex:1;min-width:180px;"><span>AI Generated (1)</span><span>19,796 (55.9%)</span></div>
+      <div class="data-row" style="flex:1;min-width:180px;"><span>Train / Test split</span><span>80% / 20%</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- MODELS -->
+<section id="models">
+  <div class="section-label">Methodology</div>
+  <h2>Three models. One clear winner.</h2>
+  <p>We followed a baseline-to-advanced progression — starting simple to understand the data, then scaling up to a state-of-the-art transformer model.</p>
+  <div class="models-list">
+    <div class="model-card">
+      <div class="model-num">01</div>
+      <div>
+        <div class="model-name">Logistic Regression</div>
+        <div class="model-type">Supervised · TF-IDF Features</div>
+        <p>Our baseline. Uses TF-IDF to convert tweet words into numerical features — giving high scores to rare meaningful words and low scores to common ones. Fast, interpretable and a strong benchmark. We compared unigram vs bigram approaches finding bigrams improved performance.</p>
+      </div>
+      <div class="model-accuracy">
+        <div class="accuracy-num">82.35%</div>
+        <div class="accuracy-label">Accuracy</div>
+      </div>
+    </div>
+    <div class="model-card">
+      <div class="model-num">02</div>
+      <div>
+        <div class="model-name">Random Forest</div>
+        <div class="model-type">Supervised · Ensemble · TF-IDF Features</div>
+        <p>An ensemble of 100 decision trees trained on TF-IDF features. Captures more complex patterns than Logistic Regression. Achieved the highest recall (91.87%) — catching more AI tweets — but lower precision, meaning it also flagged more human tweets incorrectly.</p>
+      </div>
+      <div class="model-accuracy">
+        <div class="accuracy-num">82.82%</div>
+        <div class="accuracy-label">Accuracy</div>
+      </div>
+    </div>
+    <div class="model-card best">
+      <div class="model-num">03</div>
+      <div>
+        <div class="model-name">BERT</div>
+        <div class="model-type">Supervised · Deep Learning · Transformer</div>
+        <p>Fine-tuned on our combined dataset for 3 epochs using a T4 GPU on Google Colab. Unlike simpler models, BERT reads the full tweet in both directions — understanding context rather than just counting words. It can distinguish "this party was fire 🔥" from "building is on fire" where simpler models fail.</p>
+        <div class="best-badge">★ Best Model</div>
+      </div>
+      <div class="model-accuracy">
+        <div class="accuracy-num">92.00%</div>
+        <div class="accuracy-label">Accuracy</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results">
+  <div class="section-label">Evaluation</div>
+  <h2>Results & Comparison</h2>
+  <p>All models were evaluated on the same held-out 20% test set of 7,089 tweets using stratified sampling to preserve label distribution.</p>
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Accuracy</th>
+        <th>Precision</th>
+        <th>Recall</th>
+        <th>F1-Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="model-col">Logistic Regression</td>
+        <td>82.35%</td>
+        <td>83.30%</td>
+        <td>85.55%</td>
+        <td>84.41%</td>
+      </tr>
+      <tr>
+        <td class="model-col">Random Forest</td>
+        <td>82.82%</td>
+        <td>80.23%</td>
+        <td>91.87%</td>
+        <td>85.66%</td>
+      </tr>
+      <tr class="best-row">
+        <td class="model-col" style="color:var(--green)">BERT ★</td>
+        <td>92.00%</td>
+        <td>92.00%</td>
+        <td>92.00%</td>
+        <td>92.00%</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="bias-box" style="margin-top:2rem;">
+    <h3>Essential Question: How can AI/ML amplify or mitigate bias?</h3>
+    <p>Our model partially learned election vocabulary from ElectAI rather than general AI writing patterns — a form of topic bias that could cause inconsistent performance on tweets outside election domains. We mitigated this by combining two diverse datasets, applying stratified splits, using class weight balancing, and transparently reporting per-class performance rather than just headline accuracy numbers.</p>
+  </div>
+</section>
+
+<!-- IMPACT -->
+<section id="impact">
+  <div class="section-label">Impact</div>
+  <h2>Positive & Negative Impact</h2>
+  <div class="impact-grid">
+    <div class="impact-card positive">
+      <div class="impact-title">✓ Positive Impact</div>
+      <ul class="impact-list">
+        <li>Helps researchers studying public opinion filter bot content for more accurate findings</li>
+        <li>Supports content moderation by helping platforms monitor AI-generated posts</li>
+        <li>Promotes AI transparency by helping users identify machine-generated content</li>
+      </ul>
+    </div>
+    <div class="impact-card negative">
+      <div class="impact-title">✗ Negative Impact</div>
+      <ul class="impact-list">
+        <li>False positives may incorrectly flag human tweets as AI-generated, silencing real voices</li>
+        <li>Model may perform differently across writing styles, languages and demographics</li>
+        <li>Could be misused to unfairly judge people based on how they write</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- NEXT STEPS -->
+<section id="next">
+  <div class="section-label">Next Steps</div>
+  <h2>What comes next.</h2>
+  <div class="two-col">
+    <div class="col-card">
+      <h4>Technical</h4>
+      <ul>
+        <li>Fine-tune BERT on more recent AI-generated tweet data to improve generalization</li>
+        <li>Collect multilingual data to reduce language and geographic bias</li>
+        <li>Evaluate performance separately across tweet topics</li>
+        <li>Explore DistilBERT for faster inference</li>
+      </ul>
+    </div>
+    <div class="col-card">
+      <h4>Individual</h4>
+      <ul>
+        <li>Apply ML skills to new research projects and competitions</li>
+        <li>Pursue internship opportunities in AI and data science</li>
+        <li>Participate in AI hackathons and open source contributions</li>
+        <li>Continue building on NLP and transformer model experience</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="section-label">Team 22D</div>
+  <h2>The people behind the project.</h2>
+  <div class="team-grid">
+    <div class="team-chip">Waguea Carine Fongang</div>
+    <div class="team-chip">Abdallah Gazal</div>
+    <div class="team-chip">Samphasnearyroth Chau</div>
+    <div class="team-chip">Mario Chong Loo</div>
+    <div class="team-chip">Samanvitha Paderthi</div>
+    <div class="team-chip">Alayna Veeck</div>
+  </div>
+</section>
+
+<!-- CITATIONS -->
+<section id="citations">
+  <div class="section-label">References</div>
+  <h2>Citations</h2>
+  <ul class="citations-list">
+    <li>Fagni, T., Falchi, F., Gambini, M., Martella, A., & Tesconi, M. (2021). TweepFake: About detecting deepfake tweets. <em>PLOS ONE.</em> <a href="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0251415" target="_blank">doi.org/10.1371/journal.pone.0251415</a></li>
+    <li>ElectAI: Human vs AI Election Claims Detection in Social Media. (2024). <a href="https://arxiv.org/abs/2404.16116" target="_blank">arxiv.org/abs/2404.16116</a></li>
+    <li>Devlin, J., Chang, M., Lee, K., & Toutanova, K. (2019). BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding. <em>NAACL.</em> <a href="https://arxiv.org/abs/1810.04805" target="_blank">arxiv.org/abs/1810.04805</a></li>
+    <li>Varol, O., Ferrara, E., Davis, C., Menczer, F., & Flammini, A. (2017). Online Human-Bot Interactions: Detection, Estimation, and Characterization. <em>ICWSM.</em> <a href="https://arxiv.org/abs/1703.03107" target="_blank">arxiv.org/abs/1703.03107</a></li>
+    <li>Vosoughi, S., Roy, D., & Aral, S. (2018). The spread of true and false news online. <em>Science, 359(6380).</em> <a href="https://www.science.org/doi/10.1126/science.aap9559" target="_blank">doi.org/10.1126/science.aap9559</a></li>
+    <li>Ferrara, E., Varol, O., Davis, C., Menczer, F., & Flammini, A. (2016). The Rise of Social Bots. <em>Communications of the ACM, 59(7).</em> <a href="https://dl.acm.org/doi/10.1145/2818717" target="_blank">doi.org/10.1145/2818717</a></li>
+  </ul>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>AI4ALL Ignite SU26 · Team 22D · <a href="https://github.com/wagueacarinetech-hue/Machine-Learning-project-22D" target="_blank">github.com/wagueacarinetech-hue/Machine-Learning-project-22D</a></p>
+</footer>
+
+</body>
+</html>
